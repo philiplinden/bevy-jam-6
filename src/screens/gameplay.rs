@@ -1,12 +1,20 @@
 //! The screen state for the main gameplay.
 
 use bevy::{input::common_conditions::input_just_pressed, prelude::*, ui::Val::*};
+use bevy_egui::{EguiContextPass, EguiContextSettings, EguiContexts, EguiPlugin};
+use crate::demo::element_dashboard::element_dashboard;
 
 use crate::{Pause, demo::level::spawn_level, menus::Menu, screens::Screen};
 
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(OnEnter(Screen::Gameplay), spawn_level);
-
+    app.add_plugins(EguiPlugin {
+        enable_multipass_for_primary_context: true,
+    });
+    app.add_systems(
+        EguiContextPass,
+        element_dashboard.run_if(in_state(Screen::Gameplay)),
+    );
     // Toggle pause on key press.
     app.add_systems(
         Update,
