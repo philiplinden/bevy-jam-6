@@ -7,10 +7,14 @@ use bevy::{
      }, input::common_conditions::input_just_pressed, prelude::*,
     ui::UiDebugOptions,
 };
+use avian2d::prelude::PhysicsDebugPlugin;
 use crate::screens::Screen;
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_plugins(DebugPickingPlugin);
+    app.add_plugins((
+        DebugPickingPlugin,
+        PhysicsDebugPlugin::default(),
+    ));
 
     // Log `Screen` state transitions.
     app.add_systems(Update, log_transitions::<Screen>);
@@ -33,7 +37,7 @@ pub(super) fn plugin(app: &mut App) {
                 }
             })
             .distributive_run_if(bevy::input::common_conditions::input_just_pressed(
-                KeyCode::F3,
+                KeyCode::KeyT,
             )),
         );
 }

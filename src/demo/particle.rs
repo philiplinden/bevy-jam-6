@@ -9,8 +9,8 @@ use bevy::{
 };
 
 pub(super) fn plugin(app: &mut App) {
-    app.init_resource::<SelectedElement>();
     app.add_plugins((
+        PhysicsPlugins::default(),
         PhysicsPickingPlugin::default(),
         #[cfg(not(target_arch = "wasm32"))]
         Wireframe2dPlugin::default(),
@@ -25,6 +25,9 @@ pub(super) fn plugin(app: &mut App) {
             handle_spawn_particle_event,
         ),
     );
+
+    app.init_resource::<SelectedElement>();
+    app.add_event::<SpawnParticleEvent>();
 }
 
 #[cfg(not(target_arch = "wasm32"))]
