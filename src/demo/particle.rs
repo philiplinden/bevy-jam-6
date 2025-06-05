@@ -1,4 +1,4 @@
-use avian2d::prelude::*;
+use avian2d::{position, prelude::*};
 #[cfg(not(target_arch = "wasm32"))]
 use bevy::sprite::{Wireframe2dConfig, Wireframe2dPlugin};
 use bevy::{
@@ -141,13 +141,14 @@ pub struct Particle {
 /// Event for spawning a particle at a position with a specific element.
 #[derive(Event, Debug, Clone)]
 pub struct SpawnParticleEvent {
-    pub position: Vec3,
+    pub position: Vec2,
     pub element: Element,
 }
 
 /// System to send spawn events on pointer click
 fn pointer_click_send_spawn_event(
     mut event_writer: EventWriter<SpawnParticleEvent>,
+    camera: Query<(&Camera, &GlobalTransform)>,
     pointers: Query<&PointerLocation>,
     selected_element: Res<SelectedElement>,
 ) {
@@ -155,10 +156,20 @@ fn pointer_click_send_spawn_event(
         if let Some(location) = pointer.location() {
             // Check if the pointer is pressed
             // Send the spawn event with the pointer location and selected element
-            event_writer.write(SpawnParticleEvent {
-                position: Vec3::new(location.position.x, location.position.y, 0.0),
-                element: Element::from_type(selected_element.0),
-            });
+            if let Ok((camera, camera_transform)) = camera.single() {
+                match camera.viewport_to_world_2d(camera_transform, location.position) {
+                    Ok(spawn_location) => {
+                        // Create the spawn event with the position and selected element
+                        event_writer.write(SpawnParticleEvent {
+                            position: spawn_location,
+                            element: Element::from_type(selected_element.0),
+                        });
+                    }
+                    Err(_) => {
+                        warn!("Failed to convert pointer location to world position");
+                    }
+                }
+            }
         }
     }
 }
@@ -173,11 +184,12 @@ fn handle_spawn_particle_event(
     for event in event_reader.read() {
         // Spawn the particle entity with the specified element and position
         let element = event.element.clone();
+        let position = event.position;
         commands.spawn((
             Particle {
                 element: element.clone(),
             },
-            Transform::from_translation(event.position),
+            Transform::from_xyz(position.x, position.y, 0.0),
             match element.motion_state {
                 MotionState::Frozen => (
                     RigidBody::Static,
