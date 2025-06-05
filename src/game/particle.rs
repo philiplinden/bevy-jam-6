@@ -7,6 +7,8 @@ use bevy::{
 };
 use bevy_rand::prelude::*;
 
+use super::sandbox::ScreenWrap;
+
 pub(super) fn plugin(app: &mut App) {
     app.add_plugins((
         EntropyPlugin::<WyRand>::default(),
@@ -28,10 +30,10 @@ pub(super) fn plugin(app: &mut App) {
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub enum ElementTypes {
-    Wall,
     #[default]
     Sand,
     Water,
+    Wall,
     Ice,
     Fire,
     Oil,
@@ -218,6 +220,7 @@ fn handle_spawn_particle_event(
         commands.spawn((
             Name::new(format!("{} particle", element.name)),
             Particle::new(element, position),
+            ScreenWrap,
         ));
     }
 }

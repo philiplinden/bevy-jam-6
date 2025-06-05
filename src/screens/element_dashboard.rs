@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bevy_egui::{egui, EguiContexts};
-use super::particle::{SelectedElement, ElementTypes};
+use crate::game::particle::{SelectedElement, ElementTypes};
 
 struct ElementButton {
     name: &'static str,
@@ -179,6 +179,7 @@ fn element_type_from_button_name(name: &str) -> Option<ElementTypes> {
         "ICE" => Some(ElementTypes::Ice),
         "OIL" => Some(ElementTypes::Oil),
         "S-BALL" | "BALL" => Some(ElementTypes::BouncyBall),
+        "WALL" => Some(ElementTypes::Wall),
         // Add more mappings as needed
         _ => None,
     }

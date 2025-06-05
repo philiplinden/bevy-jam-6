@@ -2,12 +2,11 @@
 
 use bevy::{input::common_conditions::input_just_pressed, prelude::*, ui::Val::*};
 use bevy_egui::{EguiContextPass, EguiContextSettings, EguiContexts, EguiPlugin};
-use crate::demo::element_dashboard::element_dashboard;
+use super::element_dashboard::element_dashboard;
 
-use crate::{Pause, demo::level::spawn_level, menus::Menu, screens::Screen};
+use crate::{Pause, menus::Menu, screens::Screen};
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_systems(OnEnter(Screen::Gameplay), spawn_level);
     app.add_plugins(EguiPlugin {
         enable_multipass_for_primary_context: true,
     });

@@ -4,6 +4,7 @@ mod gameplay;
 mod loading;
 mod splash;
 mod title;
+mod element_dashboard;
 
 use bevy::prelude::*;
 
