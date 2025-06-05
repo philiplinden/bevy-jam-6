@@ -58,7 +58,7 @@ fn apply_physics_boundary(
     }
 
     let size = window.size();
-    let half_width = size.x / 1.0;
+    let half_width = size.x;
     let half_height = size.y / 4.0;
 
     // Top wall
