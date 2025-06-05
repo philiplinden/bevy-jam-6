@@ -1,43 +1,29 @@
-use avian2d::{position, prelude::*};
-#[cfg(not(target_arch = "wasm32"))]
-use bevy::sprite::{Wireframe2dConfig, Wireframe2dPlugin};
+use avian2d::prelude::*;
 use bevy::{
     color::palettes::css::{AZURE, BISQUE, BROWN, GREY, HOT_PINK, ORANGE_RED, ROYAL_BLUE},
     input::common_conditions::input_pressed,
     picking::pointer::PointerLocation,
     prelude::*,
 };
+use bevy_rand::prelude::*;
 
 pub(super) fn plugin(app: &mut App) {
     app.add_plugins((
+        EntropyPlugin::<WyRand>::default(),
         PhysicsPlugins::default(),
         PhysicsPickingPlugin::default(),
-        #[cfg(not(target_arch = "wasm32"))]
-        Wireframe2dPlugin::default(),
     ));
-    #[cfg(not(target_arch = "wasm32"))]
-    app.add_systems(Update, toggle_wireframe);
-
     app.add_systems(
         Update,
         (
             pointer_click_send_spawn_event.run_if(input_pressed(MouseButton::Left)),
+            setup_particle_visuals,
             handle_spawn_particle_event,
         ),
     );
 
-    app.init_resource::<SelectedElement>();
+    app.insert_resource(SelectedElement(ElementTypes::Sand));
     app.add_event::<SpawnParticleEvent>();
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-fn toggle_wireframe(
-    mut wireframe_config: ResMut<Wireframe2dConfig>,
-    keyboard: Res<ButtonInput<KeyCode>>,
-) {
-    if keyboard.just_pressed(KeyCode::Space) {
-        wireframe_config.global = !wireframe_config.global;
-    }
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
@@ -133,9 +119,55 @@ impl Element {
 pub struct SelectedElement(pub ElementTypes);
 
 /// A single physical unit of an element.
-#[derive(Component, Debug, Clone, PartialEq)]
+#[derive(Bundle, Debug, Clone)]
 pub struct Particle {
     pub element: Element,
+    collider: Collider,
+    rigid_body: RigidBody,
+    transform: Transform,
+    entropy: Entropy<WyRand>,
+}
+
+impl Particle {
+    pub fn new(element: Element, position: Vec2) -> Self {
+        let (collider, rigid_body) = match element.motion_state {
+            MotionState::Frozen => (Collider::rectangle(1.0, 1.0), RigidBody::Static),
+            MotionState::Solid => (Collider::rectangle(1.0, 1.0), RigidBody::Dynamic),
+            MotionState::Liquid => (Collider::circle(0.5), RigidBody::Dynamic),
+            MotionState::Gas => (Collider::circle(0.1), RigidBody::Dynamic),
+        };
+        Self {
+            element,
+            collider,
+            rigid_body,
+            transform: Transform::from_translation(position.extend(0.0)),
+            entropy: Entropy::<WyRand>::default(),
+        }
+    }
+}
+
+/// When an element is added to an entity, this system sets the visual shape and color based on the element's properties.
+fn setup_particle_visuals(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+    query: Query<(Entity, &Element, &Transform, &Name), Added<Element>>,
+) {
+    for (entity, element, transform, name) in query.iter() {
+        info!("Setting up visuals for particle: {:?}", name);
+        let mesh_handle = match element.motion_state {
+            MotionState::Frozen | MotionState::Solid => meshes.add(Rectangle::new(1.0, 1.0)),
+            MotionState::Liquid => meshes.add(Circle::new(0.5)),
+            MotionState::Gas => meshes.add(Circle::new(0.1)),
+        };
+        let material_handle = materials.add(ColorMaterial::from_color(element.color));
+        commands.entity(entity).insert((
+            Mesh2d(mesh_handle),
+            MeshMaterial2d(material_handle),
+            *transform,
+        ));
+        info!("{:?} should have color {:?}", name, element.color);
+    }
 }
 
 /// Event for spawning a particle at a position with a specific element.
@@ -174,46 +206,18 @@ fn pointer_click_send_spawn_event(
     }
 }
 
-/// System to handle spawn events
+/// This system listens for the [`SpawnParticleEvent`] and spawns a particle entity with the specified element and position.
 fn handle_spawn_particle_event(
     mut commands: Commands,
     mut event_reader: EventReader<SpawnParticleEvent>,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     for event in event_reader.read() {
-        // Spawn the particle entity with the specified element and position
         let element = event.element.clone();
         let position = event.position;
+        info!("Spawning {:?} particle at position: {:?}", element.name, position);
         commands.spawn((
-            Particle {
-                element: element.clone(),
-            },
-            Transform::from_xyz(position.x, position.y, 0.0),
-            match element.motion_state {
-                MotionState::Frozen => (
-                    RigidBody::Static,
-                    Collider::rectangle(1.0, 1.0),
-                    Mesh2d(meshes.add(Rectangle::new(1.0, 1.0))),
-                ),
-                MotionState::Solid => (
-                    RigidBody::Dynamic,
-                    Collider::rectangle(1.0, 1.0),
-                    Mesh2d(meshes.add(Rectangle::new(1.0, 1.0))),
-                ),
-                MotionState::Liquid => (
-                    RigidBody::Dynamic,
-                    Collider::circle(0.5),
-                    Mesh2d(meshes.add(Circle::new(0.5))),
-                ),
-                MotionState::Gas => (
-                    RigidBody::Dynamic,
-                    Collider::circle(0.1),
-                    Mesh2d(meshes.add(Circle::new(0.1))),
-                ),
-            },
-            MeshMaterial2d(materials.add(element.color)),
             Name::new(format!("{} particle", element.name)),
+            Particle::new(element, position),
         ));
     }
 }

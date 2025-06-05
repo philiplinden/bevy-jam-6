@@ -1,4 +1,6 @@
+use bevy::prelude::*;
 use bevy_egui::{egui, EguiContexts};
+use super::particle::{SelectedElement, ElementTypes};
 
 struct ElementButton {
     name: &'static str,
@@ -30,7 +32,10 @@ impl ElementButton {
     }
 }
 
-pub fn element_dashboard(mut contexts: EguiContexts) {
+pub fn element_dashboard(
+    mut contexts: EguiContexts,
+    mut selected_element: ResMut<SelectedElement>,
+) {
     let ctx = contexts.ctx_mut();
 
     // Define all elements with their properties
@@ -104,45 +109,59 @@ pub fn element_dashboard(mut contexts: EguiContexts) {
             let button_width = 80.0; // Approximate button width
             let spacing = 8.0; // Spacing between columns
             let max_possible_columns = ((available_width + spacing) / (button_width + spacing)).floor() as usize;
-            
+
             // Combine all buttons
             let all_buttons: Vec<&ElementButton> = elements.iter().chain(tools.iter()).collect();
             let total_items = all_buttons.len();
-            
+
             // Don't create more columns than we have items, and ensure at least 1 column
             let num_columns = max_possible_columns.min(total_items).max(1);
             let items_per_column = (total_items + num_columns - 1) / num_columns; // Ceiling division
-            
+
             // Create columns
             for col in 0..num_columns {
                 let start_idx = col * items_per_column;
-                
+
                 // Skip empty columns
                 if start_idx >= total_items {
                     break;
                 }
-                
+
                 ui.vertical(|ui| {
                     let end_idx = ((col + 1) * items_per_column).min(total_items);
-                    
+
                     for button in &all_buttons[start_idx..end_idx] {
+                        let is_selected = if let Some(element_type) = element_type_from_button_name(button.name) {
+                            selected_element.0 == element_type
+                        } else {
+                            false
+                        };
                         let mut rich_text = egui::RichText::new(button.name)
                             .color(button.color)
                             .size(14.0);
-                        
                         if button.is_strong {
                             rich_text = rich_text.strong();
                         }
                         if button.is_italics {
                             rich_text = rich_text.italics();
                         }
-                        
-                        if ui.add(egui::Button::new(rich_text)).clicked() {
-                            println!("{}", button.action);
+                        let button_response = if is_selected {
+                            ui.add(
+                                egui::Button::new(rich_text)
+                                    .stroke(egui::Stroke::new(2.0, egui::Color32::YELLOW))
+                            )
+                        } else {
+                            ui.add(egui::Button::new(rich_text))
+                        };
+                        if button_response.clicked() {
+                            if let Some(element_type) = element_type_from_button_name(button.name) {
+                                selected_element.0 = element_type;
+                                info!("Selected element: {:?}", selected_element.0);
+                            }
                         }
                     }
                 });
-                
+
                 // Add spacing between columns except for the last one
                 if col < num_columns - 1 {
                     ui.add_space(spacing);
@@ -150,4 +169,17 @@ pub fn element_dashboard(mut contexts: EguiContexts) {
             }
         });
     });
+}
+
+fn element_type_from_button_name(name: &str) -> Option<ElementTypes> {
+    match name {
+        "SAND" | "POWDER" => Some(ElementTypes::Sand),
+        "WATER" => Some(ElementTypes::Water),
+        "FIRE" => Some(ElementTypes::Fire),
+        "ICE" => Some(ElementTypes::Ice),
+        "OIL" => Some(ElementTypes::Oil),
+        "S-BALL" | "BALL" => Some(ElementTypes::BouncyBall),
+        // Add more mappings as needed
+        _ => None,
+    }
 }
