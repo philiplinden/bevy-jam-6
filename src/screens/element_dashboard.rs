@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bevy_egui::{egui, EguiContexts};
-use crate::game::particle::{SelectedElement, ElementTypes};
+use crate::game::element::{SelectedElement, ElementTypes};
 
 struct ElementButton {
     name: &'static str,

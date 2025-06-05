@@ -2,6 +2,7 @@
 
 use bevy::prelude::*;
 
+pub mod element;
 pub mod particle;
 pub mod sandbox;
 
