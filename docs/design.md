@@ -77,15 +77,13 @@ classDiagram
     InteractionRules   --> BuoyancySystem
     InteractionRules   --> CombustionSystem
     InteractionRules   --> PhaseChangeSystem
-````
+```
 
 * **Position, Velocity**: spatial data per particle
 * **ParticleType**: defines material kinds
 * **Density, Temperature, Flammable**: trait components for specialized physics
 * **Lifetime**: optional TTL for short-lived effects
 * **InteractionRules** + **Effect**: data-driven mapping of “when X meets Y → do Z”
-
----
 
 ## 2. System Pipeline
 
@@ -123,8 +121,6 @@ flowchart LR
 
    * Sync sprites/transforms and draw.
 
----
-
 ## 3. Example Rules
 
 ```rust
@@ -148,8 +144,6 @@ rules.insert(
     Effect::ChangeType(ParticleType::Steam),
 );
 ```
-
----
 
 ## 4. Four-Hour Priorities
 
