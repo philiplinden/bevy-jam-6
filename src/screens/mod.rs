@@ -1,5 +1,6 @@
 //! The game's main screen states and transitions between them.
 
+mod element_dashboard;
 mod gameplay;
 mod loading;
 mod splash;
