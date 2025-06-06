@@ -13,15 +13,7 @@ This game is created as part of [Bevy Jam 6](https://itch.io/jam/bevy-jam-6).
 
 ```mermaid
 classDiagram
-    %% Core Components
-    class Position {
-      +x : f32
-      +y : f32
-    }
-    class Velocity {
-      +vx : f32
-      +vy : f32
-    }
+    %% Trait Components
     class ParticleType {
       Sand
       Water
@@ -42,6 +34,15 @@ classDiagram
       +t : f32
     }
 
+    %% avian2d Physics Components & Resource
+    class RigidBody {
+    }
+    class Collider {
+    }
+    class PhysicsWorld {
+      +avian2d::World
+    }
+
     %% Data-Driven Rules
     class InteractionRules {
       +rules : Map<(ParticleType,ParticleType),Effect>
@@ -54,72 +55,65 @@ classDiagram
     }
 
     %% Systems
-    class MovementSystem
+    class CollisionListener
     class BuoyancySystem
-    class CombustionSystem
     class PhaseChangeSystem
     class LifetimeSystem
     class RenderingSystem
 
-    %% Relations
-    MovementSystem      --> BuoyancySystem
-    BuoyancySystem      --> CombustionSystem
-    CombustionSystem    --> PhaseChangeSystem
-    PhaseChangeSystem   --> LifetimeSystem
-    LifetimeSystem      --> RenderingSystem
+    %% Relationships
+    PhysicsWorld     --> avian2d physics step
+    CollisionListener --> InteractionRules
+    InteractionRules  --> BuoyancySystem
+    InteractionRules  --> PhaseChangeSystem
 
-    Density            --> BuoyancySystem
-    Velocity           --> MovementSystem
-    ParticleType       --> CombustionSystem
-    ParticleType       --> PhaseChangeSystem
-    Temperature        --> PhaseChangeSystem
-    Flammable          --> CombustionSystem
-    InteractionRules   --> BuoyancySystem
-    InteractionRules   --> CombustionSystem
-    InteractionRules   --> PhaseChangeSystem
+    Density          --> BuoyancySystem
+    Temperature      --> PhaseChangeSystem
+    Flammable        --> CollisionListener
+
+    BuoyancySystem   --> PhaseChangeSystem
+    PhaseChangeSystem --> LifetimeSystem
+    LifetimeSystem   --> RenderingSystem
 ```
 
-* **Position, Velocity**: spatial data per particle
-* **ParticleType**: defines material kinds
-* **Density, Temperature, Flammable**: trait components for specialized physics
-* **Lifetime**: optional TTL for short-lived effects
-* **InteractionRules** + **Effect**: data-driven mapping of “when X meets Y → do Z”
+* **ParticleType**, **Density**, **Temperature**, **Flammable**, **Lifetime**
+  trait and metadata components remain unchanged.
+* **RigidBody**, **Collider**
+  avian2d’s core components for movement & collision.
+* **PhysicsWorld**
+  holds the avian2d simulation.
+* **InteractionRules** + **Effect**
+  central data-driven mapping of interactions.
 
 ## 2. System Pipeline
 
 ```mermaid
 flowchart LR
-  subgraph Update
-    M[MovementSystem]
+  subgraph FixedUpdate
+    P[avian2d Physics Step]
+    C[CollisionListener]
     B[BuoyancySystem]
-    C[CombustionSystem]
-    P[PhaseChangeSystem]
+    D[PhaseChangeSystem]
     L[LifetimeSystem]
-    M --> B --> C --> P --> L
+    P --> C --> B --> D --> L
   end
   subgraph Render
     L --> R[RenderingSystem]
   end
 ```
 
-1. **MovementSystem**
-
-   * Apply velocity, gravity.
-2. **BuoyancySystem**
-
-   * Swap light vs. heavy liquids (oil on water).
-3. **CombustionSystem**
-
-   * Burn flammables on fire contact.
+1. **avian2d Physics Step**
+   integrates bodies, handles collisions.
+2. **CollisionListener**
+   on collision start, looks up `(typeA,typeB)` in `InteractionRules` and `apply_effect`.
+3. **BuoyancySystem** (optional)
+   for non-collision density swaps (e.g. oil on water).
 4. **PhaseChangeSystem**
-
-   * Convert water → steam on heat.
+   converts water→steam, oil→fire, etc.
 5. **LifetimeSystem**
-
-   * Despawn expired/consumed entities.
+   despawns consumed/expired entities.
 6. **RenderingSystem**
-
-   * Sync sprites/transforms and draw.
+   syncs transforms & draws sprites.
 
 ## 3. Example Rules
 
@@ -145,12 +139,35 @@ rules.insert(
 );
 ```
 
+Hook these in the `collision_listener` system:
+
+```rust
+fn collision_listener(
+    mut events: EventReader<CollisionEvent>,
+    rules: Res<InteractionRules>,
+    mut commands: Commands,
+) {
+    for CollisionEvent(a, b, started) in events.iter() {
+        if !started { continue; }
+        if let Some(effect) = rules.rules.get(&(a.type, b.type)) {
+            apply_effect(effect, &mut commands, a, b);
+        }
+    }
+}
+```
+
 ## 4. Four-Hour Priorities
 
-1. **Grid & Movement**: build `WorldGrid`, implement `MovementSystem`.
-2. **Single Particle**: get “sand” falling correctly.
-3. **First Interaction**: add oil/water buoyancy.
-4. **Layer Effects**: add combustion and steam rules.
-5. **Rendering**: minimal sprite or colored quad per particle.
+1. **avian2d Wiring**
+   – Add `RigidBody`, `Collider` components & `PhysicsWorld` resource.
+   – Hook avian2d plugin into your Bevy app.
+2. **Collision Listener**
+   – Read collision events and `InteractionRules`.
+3. **First Interaction**
+   – Implement oil/water swap rule. Verify in–game.
+4. **Layer Effects**
+   – Add combustion (oil→fire) and steam rules.
+5. **Rendering**
+   – Minimal sprite or colored quad per body, synced from avian2d transforms.
 
-> Keep systems small, data-driven, and pipeline-ordered. Iterate one rule at a time.
+> Leverage avian2d for low-level movement/collision; keep your ECS focused on game-specific behaviors.
