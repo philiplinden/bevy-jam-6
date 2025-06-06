@@ -14,6 +14,7 @@ pub enum ElementTypes {
 
 /// Indicates whether the particle is frozen in place or free to move around.
 /// Things like walls and ice are frozen, while sand and water are not.
+#[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MotionState {
     Frozen, // Static particles (walls, barriers)

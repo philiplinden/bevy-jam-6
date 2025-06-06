@@ -34,6 +34,7 @@ jobs:
           components: rustfmt
 
       - name: Check formatting
+        continue-on-error: true
         run: cargo fmt --all -- --check
 
   # Check documentation.

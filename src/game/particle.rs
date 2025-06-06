@@ -1,11 +1,8 @@
 use avian2d::prelude::*;
-use bevy::{
-    input::common_conditions::input_pressed,
-    prelude::*,
-};
+use bevy::{input::common_conditions::input_pressed, prelude::*};
 
-use super::sandbox::ScreenWrap;
 use super::element::{Element, ElementTypes, MotionState, SelectedElement};
+use super::sandbox::ScreenWrap;
 
 pub(super) fn plugin(app: &mut App) {
     app.add_plugins(PhysicsPlugins::default());
@@ -58,10 +55,9 @@ fn setup_particle_visuals(
             MotionState::Gas => meshes.add(Circle::new(0.1)),
         };
         let material_handle = materials.add(ColorMaterial::from_color(element.color));
-        commands.entity(entity).insert((
-            Mesh2d(mesh_handle),
-            MeshMaterial2d(material_handle),
-        ));
+        commands
+            .entity(entity)
+            .insert((Mesh2d(mesh_handle), MeshMaterial2d(material_handle)));
     }
 }
 
@@ -74,12 +70,11 @@ fn spawn_particle_on_click(
     if let Ok(window) = windows.single() {
         if let Some(cursor_position) = window.cursor_position() {
             if let Ok((camera, camera_transform)) = camera.single() {
-                if let Ok(world_position) = camera.viewport_to_world_2d(camera_transform, cursor_position) {
+                if let Ok(world_position) =
+                    camera.viewport_to_world_2d(camera_transform, cursor_position)
+                {
                     let element = Element::from_type(selected_element.0);
-                    commands.spawn((
-                        Particle::new(element, world_position),
-                        ScreenWrap,
-                    ));
+                    commands.spawn((Particle::new(element, world_position), ScreenWrap));
                 }
             }
         }

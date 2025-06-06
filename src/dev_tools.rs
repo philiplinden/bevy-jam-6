@@ -1,16 +1,18 @@
 //! Development tools for the game. This plugin is only enabled in dev builds.
 
-use bevy::{
-    dev_tools::{
-        states::log_transitions,
-        picking_debug::{DebugPickingMode, DebugPickingPlugin}
-     }, input::common_conditions::input_just_pressed, prelude::*,
-    ui::UiDebugOptions,
-};
+use crate::screens::Screen;
+use avian2d::prelude::PhysicsDebugPlugin;
 #[cfg(not(target_arch = "wasm32"))]
 use bevy::sprite::{Wireframe2dConfig, Wireframe2dPlugin};
-use avian2d::prelude::PhysicsDebugPlugin;
-use crate::screens::Screen;
+use bevy::{
+    dev_tools::{
+        picking_debug::{DebugPickingMode, DebugPickingPlugin},
+        states::log_transitions,
+    },
+    input::common_conditions::input_just_pressed,
+    prelude::*,
+    ui::UiDebugOptions,
+};
 
 pub(super) fn plugin(app: &mut App) {
     app.add_plugins((
