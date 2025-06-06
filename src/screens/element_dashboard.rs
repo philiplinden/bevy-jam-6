@@ -175,12 +175,8 @@ fn element_type_from_button_name(name: &str) -> Option<ElementTypes> {
     match name {
         "SAND" | "POWDER" => Some(ElementTypes::Sand),
         "WATER" => Some(ElementTypes::Water),
-        "FIRE" => Some(ElementTypes::Fire),
-        "ICE" => Some(ElementTypes::Ice),
         "OIL" => Some(ElementTypes::Oil),
-        "S-BALL" | "BALL" => Some(ElementTypes::BouncyBall),
         "WALL" => Some(ElementTypes::Wall),
-        // Add more mappings as needed
         _ => None,
     }
 }

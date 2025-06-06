@@ -18,7 +18,7 @@ tracing = { version = "0.1.41", features = [
     "release_max_level_warn",
 ] }
 bevy_egui = "0.34.1"
-avian2d = "0.3.0"
+avian2d = "0.3.1"
 bevy_rand = { version = "0.11.0", features = ["wyrand"] }
 
 # Your web builds will start failing if you add a dependency that pulls in `getrandom` v0.3+.
