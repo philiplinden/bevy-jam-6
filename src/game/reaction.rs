@@ -27,6 +27,10 @@ impl ReactionRegistry {
         let key = if reaction.reactants.len() == 2 {
             (reaction.reactants[0], reaction.reactants[1])
         } else {
+            warn!(
+                "Unsupported reaction with {} reactants provided. Only binary reactions are supported.",
+                reaction.reactants.len()
+            );
             return; // Only support binary reactions for now
         };
 
