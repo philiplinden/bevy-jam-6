@@ -1,7 +1,7 @@
 use avian2d::prelude::*;
 use bevy::{input::common_conditions::input_pressed, prelude::*};
 
-use super::element::{Element, ElementTypes, MotionState, SelectedElement};
+use super::elements::{DiffusionRule, Element, ElementType, SelectedElement};
 use super::sandbox::ScreenWrap;
 
 pub(super) fn plugin(app: &mut App) {
@@ -14,7 +14,7 @@ pub(super) fn plugin(app: &mut App) {
         ),
     );
 
-    app.insert_resource(SelectedElement(ElementTypes::Sand));
+    app.insert_resource(SelectedElement(ElementType::Sand));
 }
 
 #[derive(Bundle, Debug, Clone)]
@@ -27,11 +27,11 @@ pub struct Particle {
 
 impl Particle {
     pub fn new(element: Element, position: Vec2) -> Self {
-        let (collider, rigid_body) = match element.motion_state {
-            MotionState::Frozen => (Collider::rectangle(1.0, 1.0), RigidBody::Static),
-            MotionState::Solid => (Collider::rectangle(1.0, 1.0), RigidBody::Dynamic),
-            MotionState::Liquid => (Collider::circle(0.5), RigidBody::Dynamic),
-            MotionState::Gas => (Collider::circle(0.1), RigidBody::Dynamic),
+        let (collider, rigid_body) = match element.diffusion_rule {
+            DiffusionRule::Frozen => (Collider::rectangle(1.0, 1.0), RigidBody::Static),
+            DiffusionRule::Fall => (Collider::rectangle(1.0, 1.0), RigidBody::Dynamic),
+            DiffusionRule::Fill => (Collider::circle(0.5), RigidBody::Dynamic),
+            DiffusionRule::Diffuse => (Collider::circle(0.1), RigidBody::Dynamic),
         };
         Self {
             element,
@@ -49,10 +49,10 @@ fn setup_particle_visuals(
     query: Query<(Entity, &Element), Added<Element>>,
 ) {
     for (entity, element) in query.iter() {
-        let mesh_handle = match element.motion_state {
-            MotionState::Frozen | MotionState::Solid => meshes.add(Rectangle::new(1.0, 1.0)),
-            MotionState::Liquid => meshes.add(Circle::new(0.5)),
-            MotionState::Gas => meshes.add(Circle::new(0.1)),
+        let mesh_handle = match element.diffusion_rule {
+            DiffusionRule::Frozen | DiffusionRule::Fall => meshes.add(Rectangle::new(1.0, 1.0)),
+            DiffusionRule::Fill => meshes.add(Circle::new(0.5)),
+            DiffusionRule::Diffuse => meshes.add(Circle::new(0.1)),
         };
         let material_handle = materials.add(ColorMaterial::from_color(element.color));
         commands

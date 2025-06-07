@@ -1,4 +1,4 @@
-use crate::game::element::{ElementTypes, SelectedElement};
+use crate::game::elements::{ElementType, SelectedElement};
 use bevy::prelude::*;
 use bevy_egui::{EguiContexts, egui};
 
@@ -247,12 +247,15 @@ pub fn element_dashboard(
     });
 }
 
-fn element_type_from_button_name(name: &str) -> Option<ElementTypes> {
+fn element_type_from_button_name(name: &str) -> Option<ElementType> {
     match name {
-        "SAND" | "POWDER" => Some(ElementTypes::Sand),
-        "WATER" => Some(ElementTypes::Water),
-        "OIL" => Some(ElementTypes::Oil),
-        "WALL" => Some(ElementTypes::Wall),
+        "POWDER" => Some(ElementType::Powder),
+        "SAND" => Some(ElementType::Sand),
+        "WATER" => Some(ElementType::Water),
+        "OIL" => Some(ElementType::Oil),
+        "FIRE" => Some(ElementType::Fire),
+        "STEAM" => Some(ElementType::Steam),
+        "WALL" => Some(ElementType::Wall),
         _ => None,
     }
 }
